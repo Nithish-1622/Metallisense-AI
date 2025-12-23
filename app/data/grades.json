@@ -1,0 +1,130 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "Metal grade specifications for MetalliSense AI",
+    "elements": ["Fe", "C", "Si", "Mn", "P", "S"],
+    "last_updated": "2025-12-23"
+  },
+  "grades": {
+    "SG-IRON": {
+      "grade": "SG-IRON",
+      "description": "Spheroidal Graphite Cast Iron (Ductile Iron)",
+      "standard": "ASTM A536",
+      "composition_ranges": {
+        "Fe": [82.0, 90.0],
+        "C": [3.0, 4.0],
+        "Si": [1.8, 2.8],
+        "Mn": [0.3, 1.0],
+        "P": [0.01, 0.08],
+        "S": [0.01, 0.03]
+      },
+      "physical_properties": {
+        "tensile_strength_mpa": [400, 700],
+        "yield_strength_mpa": [250, 500],
+        "elongation_percent": [10, 25]
+      },
+      "typical_applications": [
+        "Automotive components",
+        "Pipe fittings",
+        "Valves",
+        "Gears"
+      ]
+    },
+    "GREY-IRON": {
+      "grade": "GREY-IRON",
+      "description": "Grey Cast Iron (General Purpose)",
+      "standard": "ASTM A48",
+      "composition_ranges": {
+        "Fe": [85.0, 92.0],
+        "C": [2.5, 3.8],
+        "Si": [1.0, 2.5],
+        "Mn": [0.4, 1.2],
+        "P": [0.02, 0.15],
+        "S": [0.02, 0.12]
+      },
+      "physical_properties": {
+        "tensile_strength_mpa": [150, 450],
+        "yield_strength_mpa": [100, 350],
+        "elongation_percent": [0, 2]
+      },
+      "typical_applications": [
+        "Engine blocks",
+        "Machine bases",
+        "Brake rotors",
+        "Flywheels"
+      ]
+    },
+    "LOW-CARBON-STEEL": {
+      "grade": "LOW-CARBON-STEEL",
+      "description": "Mild Steel (Carbon < 0.3%)",
+      "standard": "ASTM A36",
+      "composition_ranges": {
+        "Fe": [98.0, 99.5],
+        "C": [0.05, 0.25],
+        "Si": [0.1, 0.5],
+        "Mn": [0.3, 0.9],
+        "P": [0.01, 0.04],
+        "S": [0.01, 0.05]
+      },
+      "physical_properties": {
+        "tensile_strength_mpa": [400, 550],
+        "yield_strength_mpa": [250, 400],
+        "elongation_percent": [20, 40]
+      },
+      "typical_applications": [
+        "Structural steel",
+        "Automotive body panels",
+        "Wire products",
+        "Construction materials"
+      ]
+    },
+    "MEDIUM-CARBON-STEEL": {
+      "grade": "MEDIUM-CARBON-STEEL",
+      "description": "Medium Carbon Steel (0.3-0.6% C)",
+      "standard": "ASTM A29",
+      "composition_ranges": {
+        "Fe": [97.5, 99.0],
+        "C": [0.3, 0.6],
+        "Si": [0.15, 0.6],
+        "Mn": [0.5, 1.5],
+        "P": [0.01, 0.04],
+        "S": [0.01, 0.05]
+      },
+      "physical_properties": {
+        "tensile_strength_mpa": [550, 750],
+        "yield_strength_mpa": [400, 600],
+        "elongation_percent": [15, 30]
+      },
+      "typical_applications": [
+        "Shafts",
+        "Axles",
+        "Gears",
+        "Railway wheels"
+      ]
+    },
+    "HIGH-CARBON-STEEL": {
+      "grade": "HIGH-CARBON-STEEL",
+      "description": "High Carbon Steel (0.6-1.4% C)",
+      "standard": "ASTM A684",
+      "composition_ranges": {
+        "Fe": [97.0, 98.5],
+        "C": [0.6, 1.4],
+        "Si": [0.2, 0.8],
+        "Mn": [0.6, 1.8],
+        "P": [0.01, 0.04],
+        "S": [0.01, 0.05]
+      },
+      "physical_properties": {
+        "tensile_strength_mpa": [750, 1200],
+        "yield_strength_mpa": [600, 1000],
+        "elongation_percent": [5, 15]
+      },
+      "typical_applications": [
+        "Cutting tools",
+        "Springs",
+        "High-strength wire",
+        "Knives and blades"
+      ]
+    }
+  }
+}
