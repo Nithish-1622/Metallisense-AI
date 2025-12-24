@@ -21,7 +21,7 @@ class GradeSpecificationGenerator:
         if spec_file is None:
             # Use default location relative to this file
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            spec_file = os.path.join(current_dir, "grade_specifications.json")
+            spec_file = os.path.join(current_dir, "grades.json")
         
         self.spec_file = spec_file
         self.grades = self._load_specifications()
