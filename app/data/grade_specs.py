@@ -4,18 +4,50 @@ Generates realistic metallurgical grade specifications
 """
 from typing import Dict, List
 import json
+import os
 
 
 class GradeSpecificationGenerator:
     """Generates and manages metal grade specifications"""
     
-    def __init__(self):
-        self.grades = self._generate_specifications()
-    
-    def _generate_specifications(self) -> Dict[str, Dict]:
+    def __init__(self, spec_file: str = None):
         """
-        Generate realistic grade specifications for various metal grades
-        Based on actual metallurgical standards
+        Initialize grade specification generator
+        
+        Args:
+            spec_file: Path to grade specifications JSON file
+                      If None, uses default location
+        """
+        if spec_file is None:
+            # Use default location relative to this file
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            spec_file = os.path.join(current_dir, "grade_specifications.json")
+        
+        self.spec_file = spec_file
+        self.grades = self._load_specifications()
+    
+    def _load_specifications(self) -> Dict[str, Dict]:
+        """
+        Load grade specifications from JSON file
+        Falls back to hardcoded specs if file not found
+        """
+        try:
+            with open(self.spec_file, 'r') as f:
+                data = json.load(f)
+                print(f"✅ Loaded grade specifications from {self.spec_file}")
+                print(f"   Total grades: {len(data['grades'])}")
+                return data['grades']
+        except FileNotFoundError:
+            print(f"⚠️ Warning: {self.spec_file} not found, using fallback specifications")
+            return self._generate_fallback_specifications()
+        except json.JSONDecodeError as e:
+            print(f"❌ Error parsing {self.spec_file}: {e}")
+            print("   Using fallback specifications")
+            return self._generate_fallback_specifications()
+    
+    def _generate_fallback_specifications(self) -> Dict[str, Dict]:
+        """
+        Fallback specifications if JSON file is not available
         """
         specifications = {
             "SG-IRON": {

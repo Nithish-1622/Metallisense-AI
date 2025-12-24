@@ -29,7 +29,7 @@ ANOMALY_SEVERITY_THRESHOLDS = {
 ELEMENTS = ["Fe", "C", "Si", "Mn", "P", "S"]
 
 # Synthetic data generation parameters
-SYNTHETIC_DATASET_SIZE = 30000
+SYNTHETIC_DATASET_SIZE = 200000  # Scaled up from 30,000 to 200,000 for better model performance
 NORMAL_RATIO = 0.65  # 65% normal samples
 DEVIATED_RATIO = 0.35  # 35% deviated samples
 
