@@ -36,6 +36,7 @@ wheels/
 # Models and Data
 app/models/*.pkl
 app/data/*.csv
+!app/data/dataset.csv
 !app/data/__init__.py
 
 # Logs
