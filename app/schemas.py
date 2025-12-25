@@ -24,6 +24,7 @@ class Composition(BaseModel):
 class AnomalyRequest(BaseModel):
     """Request model for anomaly detection"""
     composition: Composition
+    grade: Optional[str] = Field(None, description="Optional grade for grade-aware detection")
 
 
 class AnomalyResponse(BaseModel):

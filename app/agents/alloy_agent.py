@@ -222,6 +222,32 @@ class AlloyCorrectionAgent:
                 "warning": f"Grade not in training data: {grade}"
             }
         
+        # Check if composition is already within spec (±5% tolerance)
+        spec = self.grade_generator.get_grade_spec(grade)
+        if spec:
+            comp_ranges = spec['composition_ranges']
+            all_in_spec = True
+            elements_out = []
+            
+            for element in self.elements:
+                min_val, max_val = comp_ranges[element]
+                actual = composition[element]
+                
+                # Allow 5% tolerance beyond spec
+                tolerance = (max_val - min_val) * 0.05
+                if actual < (min_val - tolerance) or actual > (max_val + tolerance):
+                    all_in_spec = False
+                    elements_out.append(element)
+            
+            # If all elements are within tolerance, no correction needed
+            if all_in_spec:
+                return {
+                    "recommended_additions": {},
+                    "confidence": 1.0,
+                    "message": "Composition is within specification. No corrections needed.",
+                    "warning": None
+                }
+        
         # Prepare features
         grade_encoded = self._encode_grade(grade)
         features = np.array([[grade_encoded] + [composition[el] for el in self.elements]])
@@ -243,6 +269,26 @@ class AlloyCorrectionAgent:
             # Only include significant additions (> 0.01%)
             if value > 0.01:
                 additions[element] = round(value, 4)
+        
+        # If no meaningful additions predicted but elements are out of spec,
+        # provide dilution recommendation
+        if not additions and spec and elements_out:
+            # Check which elements are too high
+            high_elements = []
+            for element in elements_out:
+                min_val, max_val = comp_ranges[element]
+                if composition[element] > max_val:
+                    high_elements.append(element)
+            
+            if high_elements:
+                # Recommend dilution (add Fe)
+                additions = {"Fe": 1.0}  # Suggest 1% Fe addition for dilution
+                return {
+                    "recommended_additions": additions,
+                    "confidence": 0.7,
+                    "message": f"Elements too high: {', '.join(high_elements)}. Dilution recommended.",
+                    "warning": f"Elements {', '.join(high_elements)} exceed specification. Consider dilution with base metal or re-melting."
+                }
         
         # Calculate confidence
         confidence = self._calculate_confidence(additions, composition, grade)

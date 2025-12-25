@@ -36,18 +36,19 @@ class AnomalyPredictor:
                 "Please train the model first using training/train_anomaly.py"
             )
     
-    def predict(self, composition: Dict[str, float]) -> Dict:
+    def predict(self, composition: Dict[str, float], grade: str = None) -> Dict:
         """
         Predict anomaly score for composition
         
         Args:
             composition: Dictionary with element percentages
+            grade: Optional grade for grade-aware detection
             
         Returns:
             Dictionary with anomaly_score, severity, and message
         """
         try:
-            result = self.agent.predict(composition)
+            result = self.agent.predict(composition, grade=grade)
             return result
         except Exception as e:
             return {

@@ -32,24 +32,73 @@ class AnomalyDetectionAgent:
     - Works independently of PASS/FAIL logic
     """
     
-    def __init__(self):
+    def __init__(self, grade_generator=None):
         self.model = None
         self.scaler = StandardScaler()
         self.elements = ELEMENTS
         self.is_trained = False
+        self.grade_generator = grade_generator
+        self.score_min = None
+        self.score_max = None
         
     def prepare_features(self, df: pd.DataFrame) -> np.ndarray:
         """
-        Extract and prepare features for anomaly detection
+        Extract and prepare features for anomaly detection with grade-aware deviation features
         
         Args:
-            df: DataFrame with composition data
+            df: DataFrame with composition data and grade
             
         Returns:
-            Feature array
+            Feature array with composition + deviation features
         """
+        from data.grade_specs import GradeSpecificationGenerator
+        
+        # Initialize grade generator if not provided
+        if self.grade_generator is None:
+            self.grade_generator = GradeSpecificationGenerator()
+        
         # Extract composition features
-        features = df[self.elements].values
+        composition_features = df[self.elements].values
+        
+        # Add deviation features if grade column exists
+        if 'grade' in df.columns and self.grade_generator:
+            deviation_features = []
+            
+            for idx, row in df.iterrows():
+                grade = row['grade']
+                spec = self.grade_generator.get_grade_spec(grade)
+                
+                if spec:
+                    comp_ranges = spec['composition_ranges']
+                    deviations = []
+                    
+                    for element in self.elements:
+                        min_val, max_val = comp_ranges[element]
+                        midpoint = (min_val + max_val) / 2
+                        range_width = max_val - min_val
+                        actual = row[element]
+                        
+                        # Normalized deviation from midpoint
+                        if range_width > 0:
+                            deviation = (actual - midpoint) / range_width
+                        else:
+                            deviation = 0
+                        
+                        # Out-of-range indicator
+                        out_of_range = 1.0 if (actual < min_val or actual > max_val) else 0.0
+                        
+                        deviations.extend([deviation, out_of_range])
+                    
+                    deviation_features.append(deviations)
+                else:
+                    # No spec available, use zeros
+                    deviation_features.append([0.0] * (len(self.elements) * 2))
+            
+            deviation_array = np.array(deviation_features)
+            features = np.hstack([composition_features, deviation_array])
+        else:
+            features = composition_features
+        
         return features
     
     def train(self, df: pd.DataFrame, contamination: float = ANOMALY_CONTAMINATION):
@@ -88,6 +137,10 @@ class AnomalyDetectionAgent:
         # Calculate training statistics
         train_scores = self.model.score_samples(X_scaled)
         train_predictions = self.model.predict(X_scaled)
+        
+        # Store score statistics for normalization
+        self.score_min = float(train_scores.min())
+        self.score_max = float(train_scores.max())
         
         num_anomalies = np.sum(train_predictions == -1)
         anomaly_rate = num_anomalies / len(df) * 100
@@ -134,12 +187,13 @@ class AnomalyDetectionAgent:
         else:
             return "HIGH"
     
-    def predict(self, composition: Dict[str, float]) -> Dict:
+    def predict(self, composition: Dict[str, float], grade: str = None) -> Dict:
         """
-        Predict anomaly score for a single composition
+        Predict anomaly score for a single composition with grade-aware detection
         
         Args:
             composition: Dictionary with element percentages
+            grade: Optional grade for grade-aware detection
             
         Returns:
             Dictionary with anomaly_score and severity
@@ -147,20 +201,66 @@ class AnomalyDetectionAgent:
         if not self.is_trained:
             raise ValueError("Model is not trained. Call train() first.")
         
-        # Prepare single sample
-        X = np.array([[composition[el] for el in self.elements]])
+        from data.grade_specs import GradeSpecificationGenerator
+        
+        # Initialize grade generator if needed
+        if self.grade_generator is None:
+            self.grade_generator = GradeSpecificationGenerator()
+        
+        # Check if model was trained with deviation features
+        # Old models have 6 features, new models have 18 (6 + 12 deviation features)
+        expected_features = self.scaler.n_features_in_
+        use_deviation_features = (expected_features > 6)
+        
+        # Start with composition values
+        composition_vals = [composition[el] for el in self.elements]
+        
+        # If model expects deviation features, we MUST provide them
+        if use_deviation_features:
+            # Try to get grade-specific deviations
+            if grade and self.grade_generator:
+                spec = self.grade_generator.get_grade_spec(grade)
+                
+                if spec:
+                    comp_ranges = spec['composition_ranges']
+                    deviations = []
+                    
+                    for element in self.elements:
+                        min_val, max_val = comp_ranges[element]
+                        midpoint = (min_val + max_val) / 2
+                        range_width = max_val - min_val
+                        actual = composition[element]
+                        
+                        # Normalized deviation
+                        if range_width > 0:
+                            deviation = (actual - midpoint) / range_width
+                        else:
+                            deviation = 0
+                        
+                        # Out-of-range indicator
+                        out_of_range = 1.0 if (actual < min_val or actual > max_val) else 0.0
+                        
+                        deviations.extend([deviation, out_of_range])
+                    
+                    X = np.array([composition_vals + deviations])
+                else:
+                    # No spec found, use zeros for deviations
+                    X = np.array([composition_vals + [0.0] * (len(self.elements) * 2)])
+            else:
+                # No grade provided but model expects deviations, use zeros
+                X = np.array([composition_vals + [0.0] * (len(self.elements) * 2)])
+        else:
+            # Old model, only composition features
+            X = np.array([composition_vals])
+        
         X_scaled = self.scaler.transform(X)
         
         # Get anomaly score
         raw_score = self.model.score_samples(X_scaled)[0]
         
-        # Get score statistics from training (approximate)
-        # In production, these should be stored during training
-        score_samples = self.model.score_samples(self.scaler.transform(
-            np.random.randn(1000, len(self.elements))
-        ))
-        score_min = score_samples.min()
-        score_max = score_samples.max()
+        # Use stored score statistics
+        score_min = self.score_min if self.score_min is not None else raw_score - 0.1
+        score_max = self.score_max if self.score_max is not None else raw_score + 0.1
         
         # Normalize score
         normalized_score = self._normalize_score(raw_score, score_min, score_max)
@@ -231,20 +331,30 @@ class AnomalyDetectionAgent:
             'model': self.model,
             'scaler': self.scaler,
             'elements': self.elements,
-            'is_trained': self.is_trained
+            'is_trained': self.is_trained,
+            'score_min': self.score_min,
+            'score_max': self.score_max
         }
         
         joblib.dump(model_data, filepath)
         print(f"Model saved to {filepath}")
     
     def load(self, filepath: str):
-        """Load model and scaler"""
+        """Load model and scaler with backward compatibility"""
         model_data = joblib.load(filepath)
         
         self.model = model_data['model']
         self.scaler = model_data['scaler']
         self.elements = model_data['elements']
         self.is_trained = model_data['is_trained']
+        
+        # Backward compatibility for new attributes
+        self.score_min = model_data.get('score_min', None)
+        self.score_max = model_data.get('score_max', None)
+        
+        # grade_generator is not saved, will be initialized on first use
+        if not hasattr(self, 'grade_generator'):
+            self.grade_generator = None
         
         print(f"Model loaded from {filepath}")
     

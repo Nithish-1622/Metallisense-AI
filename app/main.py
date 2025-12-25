@@ -140,9 +140,10 @@ async def predict_anomaly(request: AnomalyRequest):
     try:
         # Convert Pydantic model to dict
         composition = request.composition.dict()
+        grade = request.grade  # Optional grade parameter
         
-        # Get prediction
-        result = anomaly_predictor.predict(composition)
+        # Get prediction with grade-aware detection
+        result = anomaly_predictor.predict(composition, grade=grade)
         
         # Check for errors
         if "error" in result:
