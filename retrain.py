@@ -53,7 +53,7 @@ def validate_dataset(df: pd.DataFrame) -> bool:
     for col in element_cols:
         if not pd.api.types.is_numeric_dtype(df[col]):
             raise ValueError(f"Column {col} must be numeric")
-    
+          
     # Check for negative values
     for col in element_cols:
         if (df[col] < 0).any():
